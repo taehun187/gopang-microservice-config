@@ -1,0 +1,73 @@
+# Server Configuration
+server:
+  port: 8072
+
+# Eureka Configuration
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://eurekaserver:8070/eureka/
+
+spring:
+  application:
+    name: gopang-gateway
+  config:
+    activate:
+      on-profile: default
+
+  # Spring Cloud Configuration
+  cloud:
+    loadbalancer.ribbon.enabled: false
+
+    # Gateway Configuration
+    gateway:
+
+      discovery.locator:
+        enabled: true
+        lowerCaseServiceId: true
+      routes:
+        # Item server
+        - id: gopang-item
+          uri: lb://gopang-item # Eureka에 등록된 서비스 이름
+          # 요청할 경로 조건
+          predicates:
+            - Path=/item/**
+          filters:
+            - RewritePath=/item/(?<path>.*), /$\{path}
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=Set-Cookie
+
+        # Order server
+        - id: gopang-order
+          uri: lb://gopang-order
+          predicates:
+            - Path=/order/**
+          filters:
+            - RewritePath=/order/(?<path>.*), /$\{path}
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=Set-Cookie
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    org.springframework.web: trace
+    org.springframework.security: trace
+    org.springframework.security.oauth2: trace
+
+# Management Endpoints Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+        - "*"
+        - "gateway"
+
+  endpoint:
+    gateway:
+      enabled: true
